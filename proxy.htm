@@ -1,0 +1,51 @@
+<html><head></head><body></body>
+<script>
+
+(function(window){
+
+	var s = window.location.hash.substr(1),
+		type = !!s, // true hash false window.name
+		// not safe with hash here.
+		nString = type ? decodeURIComponent(s) : window.name,
+		ar = nString.split("::"),
+		nObj = {};
+
+		nObj.d = ar[3]; nObj.m = ar[2];
+		nObj.f = ar[1]; nObj.p = ar[0];
+
+		nObj.m = new Function("return " + nObj.m)();
+	/*
+	* d  document.domain
+	* m  message
+	* f  function string
+	* p  this frame path
+	*/
+
+	if(nObj.d){
+		document.domain = nObj.d;
+	}
+
+	var root = type ? window.parent.parent : window.parent,
+		context = null,
+		li = nObj.f.split(".");
+
+	/*
+	* In IE window.parent === window return false, even though they are the same.
+	* When this frame leave the dom tree, parent is it self.
+	*/
+
+	if (window == root) { return; }
+
+	while(li.length){
+		context = root;
+		root = context[li.shift()];
+	}
+
+	if(typeof root === "function"){
+		root.call(context, nObj.m);
+	}
+
+})(this);
+
+</script>
+</html>

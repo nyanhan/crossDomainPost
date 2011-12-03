@@ -3,21 +3,52 @@
 <head><meta charset="UTF-8"></head>
 <script src="crossDomainPost.js"></script>
 <body>
+
+<p>
+	
+</p>
 	
 <input type="button" value="click me" onclick="POST()" />
 <script>
 	
+function log(obj){
+	if(window.console){
+		console.log(obj);
+	} else {
+		alert(obj);
+	}
+}
+
 function POST(){
-	QNR.crossDomainPost("http://localhost:81/hiver/cross/iframe1.htm", {
+	QNR.crossDomainPost("https://test.qunar.com/iframe1.htm????ssffaadf#sdafasdf", {
 		content : "hello world"
-	}, "hiver/cross/iframe2.htm", {
+	}, "proxy.htm", {
 		onsuccess: function(d){
-			console.log(d);
+			log(d.chi)
 		},
 		timeout: 0,
-		ontimeout: function(){}
+		ontimeout: function(){
+			log("timeout");
+		},
+		type: 1,
+		blank: "https://test.qunar.com/blank.htm"
 	});
 }
+
+// function POST(){
+// 	QNR.crossDomainPost("http://user.qunar.com/tloginx.jsp", {
+// 		username : "",
+// 		password : ""
+// 	}, "proxy.htm", {
+// 		onsuccess: function(d){
+// 			log(d)
+// 		},
+// 		timeout: 0,
+// 		ontimeout: function(){
+// 			log("timeout");
+// 		}
+// 	});
+// }
 	
 </script>	
 </body>

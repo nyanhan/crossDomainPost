@@ -1,0 +1,63 @@
+<html>
+<head></head>
+<body>
+<script>document.write("<h1>" + location.hostname + "</h1>")</script>
+<script>document.domain = "crossdomain"</script>
+
+<script>
+    /* 1111 */
+    // var iframe = document.createElement("iframe");
+
+    // document.body.appendChild(iframe);
+
+    // iframe.src = "javascript:document.domain"
+
+    // alert(iframe.contentWindow.document.write);
+
+
+    /* 2222 */
+    // var iframe = document.createElement("iframe");
+    // iframe.src = "iframe.html";
+
+    // if (iframe.attachEvent){
+    //     iframe.attachEvent("onload", function(){
+    //         alert(iframe.contentWindow.document.write);
+    //     });
+    // } else {
+    //     iframe.onload = function(){
+    //         alert(iframe.contentWindow.document.write);
+    //     };
+    // }
+
+    // document.body.appendChild(iframe);
+
+
+    /* 3333 */
+    var iframe = document.createElement("iframe");
+    var once = ~navigator.userAgent.indexOf("Firefox");
+
+
+    
+    if (iframe.attachEvent){
+        iframe.attachEvent("onload", handleOnload);
+    } else {
+        iframe.onload = handleOnload;
+    }
+
+    function handleOnload(){
+
+        if (!once) { once = 1; return; }
+        
+        iframe.contentWindow.document.body.innerHTML += "nihao";
+
+    }
+
+    document.body.appendChild(iframe);
+
+    var header = '<!DOCTYPE html PUBLIC \\"-//W3C//DTD XHTML 1.0 Transitional//EN\\" \\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\\"><html xmlns=\\"http://www.w3.org/1999/xhtml\\"><head><style>*{margin:0;padding:0;} body {color: #888;}</style></head>';
+
+    iframe.src= "javascript:'<script>window.onload=function(){document.write(\\'"+ header +"<body><script>document.domain=document.domain;window.onbeforeunload=function(){document.write(\\\"\\\");}<\\\\/script><script>alert(parent.navigator.userAgent);<\\\\/script></body></html>\\');document.close();};<\/script>'";
+
+</script>
+</body>
+</html>

@@ -1,41 +1,55 @@
-;(function(window){
-
-	if(typeof window.QNR === "undefined"){ window.QNR = {}; }
+(function(window) {
+	'use strict';
+	if (typeof window.QNR === 'undefined') { window.QNR = {}; }
 
 	var location = window.location,
 		hostname = location.hostname,
 		doc = window.document,
 		locationList = [],
-		debug = location.search.indexOf("debug=cross=test") > 0,
-		postMessage = !!window.postMessage && !(location.search.indexOf("debug=cross=name") > 0);
+		debug = location.search.indexOf('debug=cross=debug') > 0,
+		postMessage = !!window.postMessage && !(~location.search.indexOf('debug=cross=name')),
+		blankURI = 'about:blank',
+		reURIOrigin = /[#\?].*/,
+		reURIHash = /#.+/,
+		reURISearch = /\?[^#\s]+/;
 
 	if (postMessage) {
 
 		if (window.addEventListener) {
-			window.addEventListener("message", onmessage, false);
+			window.addEventListener('message', onmessage, false);
 		} else {
-			window.attachEvent("onmessage", onmessage);
+			window.attachEvent('onmessage', onmessage);
 		}
 	}
 
-	QNR.crossDomainPost = function(uri, data, proxy, config){
+	QNR.crossDomainPost = function(uri, data, proxy, config) {
 		/*
 		* config:
 		*   onsuccess : Function
 		*   timeout : Number
 		*   ontimeout : Function
+		*	blank : String
+		*	type : Number 0 hash 1 advance
 		*/
-		if(!uri){ return; }
-
+		if (!uri) { return; }
 		config = config || {};
-		data = data || {};
-		
+		data = formatQuery(data);
+		var type = config.type || 0;
+
+		if (config.blank) {
+			blankURI = config.blank;
+
+			if (blankURI.indexOf('http') !== 0) {
+				blankURI = protocolAndHost() + '/' + blankURI;
+			}
+		}
+
 		var timeout = config.timeout || 0,
-			frameId = "crossDomainPost" + new Date().getTime(),
+			frameId = 'crossDomainPost' + new Date().getTime(),
 			finished = false;
 
-		var ontimeout = function(){
-			if(finished){ return; }
+		var ontimeout = function() {
+			if (finished) { return; }
 
 			if (config.ontimeout) {
 				config.ontimeout();
@@ -44,8 +58,8 @@
 			handle();
 		};
 
-		var onsuccess = function(str){
-			if(finished){ return; }
+		var onsuccess = function(str) {
+			if (finished) { return; }
 
 			if (config.onsuccess) {
 				config.onsuccess(str);
@@ -54,9 +68,9 @@
 			handle();
 		};
 
-		var handle = function(){
-			var iframe = doc.getElementById(frameId);
-			iframe.parentNode.removeChild(iframe);	
+		var handle = function() {
+			var iframe = $(frameId);
+			iframe.parentNode.removeChild(iframe);
 			finished = true;
 
 			delete QNR.crossDomainPost[frameId];
@@ -64,21 +78,21 @@
 
 		QNR.crossDomainPost[frameId] = onsuccess;
 
-		var html = drawIframeStruct(uri, proxy, data, 'QNR.crossDomainPost.' + frameId, frameId),
-			box = doc.createElement("div");
+		var html = drawIframeStruct(uri, proxy, data, 'QNR.crossDomainPost.' + frameId, frameId, type),
+			box = doc.createElement('div');
 
-		box.style.display = "none";
+		box.style.display = 'none';
 		box.id = frameId;
-		
+
 		box.innerHTML = html;
 		doc.body.appendChild(box);
 
 		locationList.push(uri);
 
-		if(debug){
-			$("ifr" + frameId).src = $("form" + frameId).action;
+		if (debug) {
+			$('ifr' + frameId).src = $('form' + frameId).action;
 		} else {
-			$("form" + frameId).submit();
+			$('form' + frameId).submit();
 		}
 
 		if (timeout) {
@@ -86,97 +100,137 @@
 		}
 	};
 
-	function $(id){
+	function $(id) {
 		return doc.getElementById(id);
 	}
 
-	function onmessage(evt){
+	function formatQuery(obj) {
+		var li = [];
+
+		obj = obj || {};
+
+		if (typeof obj === 'string') {
+			li = obj.split('&');
+		} else {
+			for (var k in obj) {
+				if (obj.hasOwnProperty(k)) {
+					li[li.length] = k + '=' + obj[k];
+				}
+			}
+		}
+
+		return li;
+	}
+
+	function onmessage(evt) {
 
 		if (!inLocationList(evt.origin)) { return; }
 
 		var nString = evt.data,
-			nObj = new Function("return " + nString)();
+			ar = nString.split('::'),
+			nObj = {};
+
+		nObj.d = ar[3]; nObj.m = ar[2];
+		nObj.f = ar[1]; nObj.p = ar[0];
+
+		nObj.m = new Function('return ' + nObj.m)();
 
 		var root = window,
 			context = null,
-			li = nObj.f.split(".");
+			li = nObj.f.split('.');
 
-		while(li.length){
+		while (li.length) {
 			context = root;
 			root = context[li.shift()];
 		}
 
-		if(typeof root === "function"){
+		if (typeof root === 'function') {
 			root.call(context, nObj.m);
 		}
 	}
 
-	function inLocationList( origin ){
+	function inLocationList(origin ) {
 		for (var i = 0, l = locationList.length; i < l; i++) {
-			if(locationList[i].indexOf(origin) >= 0){ return true; }
+			if (locationList[i].indexOf(origin) >= 0) { return true; }
 		}
 
 		return false;
 	}
 
-	function protocolAndHost( host ){
+	function protocolAndHost(host ) {
 
-		var port = location.port === "80" ? "" : location.port;
+		var port = location.port === '80' ? '' : location.port;
 
-		return location.protocol + "//" + (host || location.hostname) + (port ? (":" + port) : "");
+		return location.protocol + '//' + (host || location.hostname) + (port ? (':' + port) : '');
 	}
 
-	function drawIframeStruct(uri, proxy, data, globalFuncName, id){
-		
-		var ar = [];
+	function drawIframeStruct(uri, proxy, data, globalFuncName, id, type) {
 
-		var act = plusDomain(uri, proxy, globalFuncName, id),
-			ifrid = "ifr" + id, formid = "form" + id;
+		var ar = [], temp = [];
+
+		var act = plusDomain(uri, proxy, globalFuncName, type),
+			ifrid = 'ifr' + id, formid = 'form' + id;
 
 		ar[ar.length] = '<form id="' + formid + '" target="' + ifrid + '" action="' + act + '" method="POST">';
 
-		for(var k in data){
-			if(data.hasOwnProperty(k)){
-				ar[ar.length] = '<input type="text" name="' + k + '" value="' + data[k] + '" />';
-			}
+		for (var i = 0, l = data.length; i < l; i++) {
+
+			temp = data[i].split('=');
+
+			ar[ar.length] = '<input type="text" name="' + temp[0] + '" value="' + temp[1] + '" />';
 		}
 
-		ar[ar.length] = '<iframe name="' + ifrid + '" id="' + ifrid + '" src="about:blank"></iframe>';
-		
-		return ar.join("");
+		ar[ar.length] = '</form>';
+
+		// https don't allow about:blank in ie6
+
+		ar[ar.length] = '<iframe name="' + ifrid + '" id="' + ifrid + '" src="' + blankURI + '"></iframe>';
+
+		return ar.join('');
 	}
 
-	function plusDomain(uri, proxy, func, id){
+	function plusDomain(uri, proxy, func, type) {
 		var domain = hostname,
-			index = uri.indexOf("#"),
-			li = [uri];
-		
-		var bak = index < 0 ? "#" : uri.substr(index);
+			origin = uri.replace(reURIOrigin, ''),
+			hash = uri.match(reURIHash),
+			search = uri.match(reURISearch),
+			li = [origin];
 
-		li[li.length] = bak;
-		
-		if (bak.replace(/#/g, "").length) {
-			li[li.length] = "&";
+		hash = hash ? hash[0] : '#';
+		search = search ? search[0] : '?';
+
+		if (search.replace(/\?/g, '').length) {
+			search += '&';
 		}
 
-		li[li.length] = "crosspath=" + encodeURIComponent(protocolAndHost(domain) + "/" + proxy);
-		li[li.length] = "&";
-		li[li.length] = "crosscall=" + encodeURIComponent(func);
-		
-		
+		search += ('_=' + new Date().getTime());
+
+		li[li.length] = search;
+
+		if (hash.replace(/#/g, '').length) {
+			hash += '&';
+		}
+
+		li[li.length] = hash;
+
+		li[li.length] = 'crosspath=' + encodeURIComponent(protocolAndHost(domain) + '/' + proxy);
+		li[li.length] = '&';
+		li[li.length] = 'crosscall=' + encodeURIComponent(func);
+
+
 		// detect if document.domain is set
-		
+
 		if (doc.domain !== domain) {
-		    li[li.length] = "&" + "crossdomain=" + encodeURIComponent(doc.domain);
+			li[li.length] = '&crossdomain=' + encodeURIComponent(doc.domain);
 		}
 
-		if (postMessage) {
-			li[li.length] = "&" + "postMessage=true";
+		if (type && postMessage) {
+			type = 2;
 		}
-		
-		return li.join("");
+
+		li[li.length] = '&type=' + type;
+
+		return li.join('');
 	}
-
-
 
 })(this);
