@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<script src="crossDomainPost.js"></script>
+<body>
+	
+<input type="button" value="click me" onclick="POST()" />
+<script>
+	
+function POST(){
+	QNR.crossDomainPost("http://localhost:81/hiver/cross/iframe1.htm", {
+		content : "hello world"
+	}, "hiver/cross/iframe2.htm", {
+		onsuccess: function(d){
+			console.log(d);
+		},
+		timeout: 0,
+		ontimeout: function(){}
+	});
+}
+	
+</script>	
+</body>
+</html>
