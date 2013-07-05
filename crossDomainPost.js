@@ -1,6 +1,6 @@
 (function(window) {
 	'use strict';
-	if (typeof window.QNR === 'undefined') { window.QNR = {}; }
+	if(typeof QNR === "undefined"){ var QNR = {}; }
 
 	var location = window.location,
 		hostname = location.hostname,
